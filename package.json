@@ -1,0 +1,11 @@
+{
+  "name": "bara-alsalfa-samer-online",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node Bara_Alsalfa_SAMER_Online_Server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

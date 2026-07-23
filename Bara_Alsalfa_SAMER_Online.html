@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>برا السالفة • SAMER Online</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
+:root{--bg:#070812;--panel:#15182c;--line:#ffffff1a;--gold:#f4c76a;--violet:#8b7cff;--text:#f8f8ff;--muted:#a8aec9}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 0%,#8b7cff28,transparent 30%),radial-gradient(circle at 90% 10%,#63d9ff1c,transparent 28%),linear-gradient(145deg,#070812,#0b0d19);color:var(--text);font-family:Cairo,Tahoma,sans-serif;padding:18px}.app{max-width:760px;margin:auto}
+header{text-align:center;padding:20px 10px 28px}.logo{font-size:clamp(38px,8vw,64px);font-weight:900;background:linear-gradient(110deg,#fff,#ffe4a3,#f4c76a);-webkit-background-clip:text;color:transparent}.sub{color:var(--muted)}
+.card{background:#15182ccc;border:1px solid var(--line);border-radius:28px;padding:26px;box-shadow:0 24px 80px #0008;margin-bottom:18px;backdrop-filter:blur(20px)}
+h2{margin-top:0}input,select,button{width:100%;padding:14px 16px;border-radius:15px;font-size:16px;font-family:inherit}input,select{background:#070a14;color:#fff;border:1px solid var(--line);margin:7px 0 12px}button{border:0;background:linear-gradient(135deg,#f7d786,#d9a947);font-weight:900;cursor:pointer;margin-top:10px}button.secondary{background:linear-gradient(135deg,#292e50,#1b1e38);color:#fff}.hidden{display:none!important}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.room-code{font-size:36px;letter-spacing:6px;font-weight:900;color:var(--gold);text-align:center;background:#0a0c17;padding:16px;border-radius:18px;margin:14px 0}.player{display:flex;justify-content:space-between;padding:11px 14px;background:#ffffff09;border:1px solid var(--line);border-radius:14px;margin:8px 0}.notice{background:#8b7cff18;border:1px solid #8b7cff44;border-radius:18px;padding:15px}.center{text-align:center}.muted{color:var(--muted);font-size:13px}.role-word{font-size:46px;color:#ffe4a3;font-weight:900;margin:18px}.vote{background:#ffffff09;color:#fff;border:1px solid var(--line);text-align:right}.status{padding:10px 0;color:#a8aec9}.topbar{display:flex;gap:10px;align-items:center}.topbar>*{flex:1}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="logo">🕵️ برا السالفة</div><div class="sub">ONLINE EDITION • Created with ❤️ by SAMER</div></header>
+
+<section id="home" class="card">
+<h2>🌐 اللعب أونلاين</h2>
+<p class="muted">أنشئ غرفة أو ادخل بكود غرفة. كل لاعب يشوف دوره من جواله.</p>
+<div class="grid">
+<button onclick="createRoom()">🏠 إنشاء غرفة</button>
+<button class="secondary" onclick="showJoin()">🔑 دخول غرفة</button>
+</div>
+<div id="joinBox" class="hidden">
+<label>كود الغرفة</label><input id="joinCode" placeholder="مثال: SB-4829">
+<label>اسمك</label><input id="joinName" placeholder="اكتب اسمك">
+<button onclick="joinRoom()">🚪 دخول</button>
+</div>
+</section>
+
+<section id="lobby" class="card hidden">
+<div class="topbar"><h2 style="flex:2">👥 الغرفة</h2><button class="secondary" onclick="copyCode()">📋 نسخ الكود</button></div>
+<div class="room-code" id="roomCode">----</div>
+<div id="hostControls" class="hidden">
+<label>اسمك</label><input id="hostName" placeholder="اسم صاحب الغرفة">
+<label>عدد برا السالفة</label><input id="outsiderCount" type="number" min="1" value="1">
+<label>الفئة</label><select id="category"><option value="mixed">🎲 منوعة</option><option>🍔 أكل</option><option>🏙️ أماكن</option><option>🎬 أفلام ومسلسلات</option><option>⚽ رياضة</option><option>🧰 أشياء</option></select>
+</div>
+<div class="notice"><b>🔒 نظام الغرفة:</b> المضيف يبدأ الجولة، وكل لاعب يستقبل دوره بشكل خاص.</div>
+<h3>اللاعبون</h3><div id="players"></div>
+<button id="startBtn" class="hidden" onclick="startOnlineGame()">🚀 ابدأ الجولة</button>
+<div class="status" id="status">جاري الاتصال...</div>
+</section>
+
+<section id="game" class="card hidden center">
+<div class="notice" id="gameStatus">بانتظار الجولة...</div>
+<div id="privateRole" class="hidden"><h2>🔐 دورك</h2><div id="roleText"></div></div>
+<div id="questionBox" class="hidden"><h2>🎤 الأسئلة</h2><p id="pair"></p><button class="secondary" onclick="sendNextPair()">🎲 من يسأل من؟</button><button onclick="showVoting()">🗳️ التصويت</button></div>
+<div id="votingBox" class="hidden"><h2>🗳️ صوّت</h2><div id="voteList"></div><button onclick="submitVote()">تأكيد التصويت</button></div>
+<div id="resultBox" class="hidden"><h2>🏆 النتيجة</h2><div id="resultText"></div><button onclick="backToLobby()">🔁 جولة جديدة</button></div>
+</section>
+</div>
+
+<script>
+const SERVER = location.protocol === "file:" ? "ws://localhost:8787" : ((location.protocol==="https:"?"wss://":"ws://")+location.host);
+let ws=null, room="", me="", isHost=false, selectedVote=null, state={players:[]};
+const $=id=>document.getElementById(id);
+function connect(){
+  ws=new WebSocket(SERVER);
+  ws.onopen=()=>{$("status").textContent="متصل بالخادم ✅"};
+  ws.onclose=()=>{$("status").textContent="انقطع الاتصال. شغّل الخادم أو أعد المحاولة."};
+  ws.onmessage=e=>handle(JSON.parse(e.data));
+}
+function send(type,data={}){if(ws?.readyState===1)ws.send(JSON.stringify({type,room,me,...data}))}
+function createRoom(){isHost=true;me="";connect();setTimeout(()=>send("create_room"),300)}
+function showJoin(){$("joinBox").classList.remove("hidden")}
+function joinRoom(){room=$("joinCode").value.trim().toUpperCase();me=$("joinName").value.trim();if(!room||!me)return alert("اكتب الكود والاسم");isHost=false;connect();setTimeout(()=>send("join_room"),300)}
+function copyCode(){navigator.clipboard?.writeText(room);alert("تم نسخ الكود")}
+function handle(m){
+ if(m.type==="room_created"){room=m.room;showLobby();$("hostControls").classList.remove("hidden");$("startBtn").classList.remove("hidden");$("hostName").value="SAMER";me="SAMER";send("set_name",{name:me})}
+ if(m.type==="lobby"){state=m;showLobby();renderPlayers()}
+ if(m.type==="role"){showGame();$("privateRole").classList.remove("hidden");$("roleText").innerHTML=m.outsider?"<div class='role-word'>عيش اللحظة إنك معاهم 😎</div>":"<div class='role-word'>"+escapeHtml(m.word)+"</div>"}
+ if(m.type==="questions"){showGame();$("questionBox").classList.remove("hidden");$("pair").textContent=m.asker+" يسأل 👉 "+m.target}
+ if(m.type==="voting"){showGame();$("questionBox").classList.add("hidden");$("votingBox").classList.remove("hidden");renderVotes(m.players)}
+ if(m.type==="result"){showGame();$("votingBox").classList.add("hidden");$("resultBox").classList.remove("hidden");$("resultText").innerHTML=m.html}
+ if(m.type==="error")alert(m.message)
+}
+function showLobby(){$("home").classList.add("hidden");$("lobby").classList.remove("hidden");$("roomCode").textContent=room}
+function showGame(){$("lobby").classList.add("hidden");$("game").classList.remove("hidden")}
+function renderPlayers(){ $("players").innerHTML=state.players.map((p,i)=>`<div class="player"><span>${i===0?"👑 ":""}${escapeHtml(p)}</span><span>✓</span></div>`).join("")}
+function startOnlineGame(){send("start_game",{count:+$("outsiderCount").value||1,category:$("category").value})}
+function sendNextPair(){send("next_pair")}
+function showVoting(){send("start_voting")}
+function renderVotes(players){$("voteList").innerHTML=players.filter(p=>p!==me).map(p=>`<button class="vote" onclick="selectedVote='${escapeHtml(p)}';this.parentNode.querySelectorAll('button').forEach(x=>x.style.outline='');this.style.outline='3px solid #f4c76a'">${escapeHtml(p)}</button>`).join("")}
+function submitVote(){if(!selectedVote)return alert("اختر لاعبًا");send("vote",{target:selectedVote})}
+function backToLobby(){location.reload()}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+</script>
+</body></html>
