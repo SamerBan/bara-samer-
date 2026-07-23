@@ -55,38 +55,200 @@ h2{margin-top:0}input,select,button{width:100%;padding:14px 16px;border-radius:1
 </div>
 
 <script>
-const SERVER = location.protocol === "file:" ? "ws://localhost:8787" : ((location.protocol==="https:"?"wss://":"ws://")+location.host);
-let ws=null, room="", me="", isHost=false, selectedVote=null, state={players:[]};
-const $=id=>document.getElementById(id);
-function connect(){
-  ws=new WebSocket(SERVER);
-  ws.onopen=()=>{$("status").textContent="متصل بالخادم ✅"};
-  ws.onclose=()=>{$("status").textContent="انقطع الاتصال. شغّل الخادم أو أعد المحاولة."};
-  ws.onmessage=e=>handle(JSON.parse(e.data));
+const SERVER = location.protocol === "file:"
+  ? "ws://localhost:8787"
+  : ((location.protocol === "https:" ? "wss://" : "ws://") + location.host);
+
+let ws = null, room = "", me = "", isHost = false, selectedVote = null;
+let state = { players: [] };
+
+const $ = id => document.getElementById(id);
+
+function connect(onReady) {
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    if (ws.readyState === WebSocket.OPEN) onReady?.();
+    return;
+  }
+  ws = new WebSocket(SERVER);
+  ws.onopen = () => {
+    $("status").textContent = "متصل بالخادم ✅";
+    onReady?.();
+  };
+  ws.onerror = () => {
+    $("status").textContent = "تعذر الاتصال بالخادم ❌";
+    alert("تعذر الاتصال بالسيرفر. حاول تحديث الصفحة.");
+  };
+  ws.onclose = () => {
+    $("status").textContent = "انقطع الاتصال. أعد المحاولة.";
+  };
+  ws.onmessage = e => {
+    try { handle(JSON.parse(e.data)); }
+    catch { alert("وصلت رسالة غير مفهومة من السيرفر."); }
+  };
 }
-function send(type,data={}){if(ws?.readyState===1)ws.send(JSON.stringify({type,room,me,...data}))}
-function createRoom(){isHost=true;me="";connect();setTimeout(()=>send("create_room"),300)}
-function showJoin(){$("joinBox").classList.remove("hidden")}
-function joinRoom(){room=$("joinCode").value.trim().toUpperCase();me=$("joinName").value.trim();if(!room||!me)return alert("اكتب الكود والاسم");isHost=false;connect();setTimeout(()=>send("join_room"),300)}
-function copyCode(){navigator.clipboard?.writeText(room);alert("تم نسخ الكود")}
-function handle(m){
- if(m.type==="room_created"){room=m.room;showLobby();$("hostControls").classList.remove("hidden");$("startBtn").classList.remove("hidden");$("hostName").value="SAMER";me="SAMER";send("set_name",{name:me})}
- if(m.type==="lobby"){state=m;showLobby();renderPlayers()}
- if(m.type==="role"){showGame();$("privateRole").classList.remove("hidden");$("roleText").innerHTML=m.outsider?"<div class='role-word'>عيش اللحظة إنك معاهم 😎</div>":"<div class='role-word'>"+escapeHtml(m.word)+"</div>"}
- if(m.type==="questions"){showGame();$("questionBox").classList.remove("hidden");$("pair").textContent=m.asker+" يسأل 👉 "+m.target}
- if(m.type==="voting"){showGame();$("questionBox").classList.add("hidden");$("votingBox").classList.remove("hidden");renderVotes(m.players)}
- if(m.type==="result"){showGame();$("votingBox").classList.add("hidden");$("resultBox").classList.remove("hidden");$("resultText").innerHTML=m.html}
- if(m.type==="error")alert(m.message)
+
+function send(type, data = {}) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    alert("الاتصال بالسيرفر غير جاهز.");
+    return false;
+  }
+  ws.send(JSON.stringify({ type, room, me, data }));
+  return true;
 }
-function showLobby(){$("home").classList.add("hidden");$("lobby").classList.remove("hidden");$("roomCode").textContent=room}
-function showGame(){$("lobby").classList.add("hidden");$("game").classList.remove("hidden")}
-function renderPlayers(){ $("players").innerHTML=state.players.map((p,i)=>`<div class="player"><span>${i===0?"👑 ":""}${escapeHtml(p)}</span><span>✓</span></div>`).join("")}
-function startOnlineGame(){send("start_game",{count:+$("outsiderCount").value||1,category:$("category").value})}
-function sendNextPair(){send("next_pair")}
-function showVoting(){send("start_voting")}
-function renderVotes(players){$("voteList").innerHTML=players.filter(p=>p!==me).map(p=>`<button class="vote" onclick="selectedVote='${escapeHtml(p)}';this.parentNode.querySelectorAll('button').forEach(x=>x.style.outline='');this.style.outline='3px solid #f4c76a'">${escapeHtml(p)}</button>`).join("")}
-function submitVote(){if(!selectedVote)return alert("اختر لاعبًا");send("vote",{target:selectedVote})}
-function backToLobby(){location.reload()}
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+
+function createRoom() {
+  isHost = true;
+  me = "SAMER";
+  connect(() => send("create_room", { name: me }));
+}
+
+function showJoin() {
+  $("joinBox").classList.remove("hidden");
+  $("joinName").focus();
+}
+
+function joinRoom() {
+  const code = $("joinCode").value.trim().toUpperCase();
+  const name = $("joinName").value.trim();
+  if (!code || !name) return alert("اكتب كود الغرفة والاسم");
+  room = code;
+  me = name;
+  isHost = false;
+  connect(() => send("join_room", { name: me }));
+}
+
+function copyCode() {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(room).then(() => alert("تم نسخ الكود"));
+  } else {
+    alert("الكود: " + room);
+  }
+}
+
+function handle(m) {
+  if (m.type === "room_created") {
+    room = m.room;
+    me = "SAMER";
+    showLobby();
+    $("hostControls").classList.remove("hidden");
+    $("startBtn").classList.remove("hidden");
+    $("hostName").value = me;
+    $("status").textContent = "الغرفة جاهزة ✅";
+    send("set_name", { name: me });
+    return;
+  }
+
+  if (m.type === "lobby") {
+    state = m;
+    if (!room && m.room) room = m.room;
+    showLobby();
+    renderPlayers();
+    return;
+  }
+
+  if (m.type === "role") {
+    showGame();
+    $("privateRole").classList.remove("hidden");
+    $("questionBox").classList.add("hidden");
+    $("votingBox").classList.add("hidden");
+    $("resultBox").classList.add("hidden");
+    $("roleText").innerHTML = m.outsider
+      ? "<div class='role-word'>عيش اللحظة إنك معاهم 😎</div>"
+      : "<div class='role-word'>" + escapeHtml(m.word) + "</div>";
+    return;
+  }
+
+  if (m.type === "questions") {
+    showGame();
+    $("questionBox").classList.remove("hidden");
+    $("votingBox").classList.add("hidden");
+    $("resultBox").classList.add("hidden");
+    $("pair").textContent = m.asker + " يسأل 👉 " + m.target;
+    return;
+  }
+
+  if (m.type === "voting") {
+    selectedVote = null;
+    showGame();
+    $("questionBox").classList.add("hidden");
+    $("votingBox").classList.remove("hidden");
+    $("resultBox").classList.add("hidden");
+    renderVotes(m.players || []);
+    return;
+  }
+
+  if (m.type === "result") {
+    showGame();
+    $("votingBox").classList.add("hidden");
+    $("resultBox").classList.remove("hidden");
+    $("resultText").innerHTML = m.html;
+    return;
+  }
+
+  if (m.type === "error") {
+    alert(m.message || "حدث خطأ");
+  }
+}
+
+function showLobby() {
+  $("home").classList.add("hidden");
+  $("lobby").classList.remove("hidden");
+  $("roomCode").textContent = room || "----";
+}
+
+function showGame() {
+  $("lobby").classList.add("hidden");
+  $("game").classList.remove("hidden");
+}
+
+function renderPlayers() {
+  $("players").innerHTML = (state.players || []).map((p, i) =>
+    `<div class="player"><span>${i === 0 ? "👑 " : ""}${escapeHtml(p)}</span><span>✓</span></div>`
+  ).join("");
+}
+
+function startOnlineGame() {
+  const count = Math.max(1, parseInt($("outsiderCount").value, 10) || 1);
+  const category = $("category").value;
+  send("start_game", { count, category });
+}
+
+function sendNextPair() {
+  send("next_pair");
+}
+
+function showVoting() {
+  send("start_voting");
+}
+
+function renderVotes(players) {
+  $("voteList").innerHTML = players
+    .filter(p => p !== me)
+    .map(p => `<button class="vote" data-player="${escapeHtml(p)}">${escapeHtml(p)}</button>`)
+    .join("");
+
+  $("voteList").querySelectorAll(".vote").forEach(btn => {
+    btn.addEventListener("click", () => {
+      selectedVote = btn.dataset.player;
+      $("voteList").querySelectorAll(".vote").forEach(x => x.style.outline = "");
+      btn.style.outline = "3px solid #f4c76a";
+    });
+  });
+}
+
+function submitVote() {
+  if (!selectedVote) return alert("اختر لاعبًا");
+  send("vote", { target: selectedVote });
+}
+
+function backToLobby() {
+  location.reload();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, m => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
+  }[m]));
+}
 </script>
 </body></html>
