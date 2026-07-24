@@ -1,7 +1,15 @@
 {
-  "name": "bara-alsalfa-samer-online",
+  "name": "bara-alsalfa-online",
   "version": "2.0.0",
-  "private": true,
-  "scripts": { "start": "node Bara_Alsalfa_SAMER_Online_Server.js" },
-  "dependencies": { "ws": "^8.18.0" }
+  "description": "برا السالفة - Online multiplayer party word game (SAMER Online)",
+  "main": "Bara_Alsalfa_SAMER_Online_Server.js",
+  "scripts": {
+    "start": "node Bara_Alsalfa_SAMER_Online_Server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.17.0"
+  }
 }

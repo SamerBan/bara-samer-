@@ -1,7 +1,10 @@
 services:
   - type: web
-    name: bara-alsalfa-samer
-    runtime: node
+    name: bara-alsalfa-online
+    env: node
     plan: free
     buildCommand: npm install
     startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 18.20.4

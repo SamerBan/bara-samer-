@@ -1,26 +1,526 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>برا السالفة • SAMER Online</title><style>
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');:root{--bg:#070812;--panel:#15182c;--line:#ffffff1a;--gold:#f4c76a;--violet:#8b7cff;--text:#f8f8ff;--muted:#a8aec9}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 0%,#8b7cff28,transparent 30%),radial-gradient(circle at 90% 10%,#63d9ff1c,transparent 28%),linear-gradient(145deg,#070812,#0b0d19);color:var(--text);font-family:Cairo,Tahoma,sans-serif;padding:18px}.app{max-width:760px;margin:auto}header{text-align:center;padding:20px 10px 28px}.logo{font-size:clamp(38px,8vw,64px);font-weight:900;background:linear-gradient(110deg,#fff,#ffe4a3,#f4c76a);-webkit-background-clip:text;color:transparent}.sub{color:var(--muted)}.card{background:#15182ccc;border:1px solid var(--line);border-radius:28px;padding:26px;box-shadow:0 24px 80px #0008;margin-bottom:18px;backdrop-filter:blur(20px)}h2{margin-top:0}input,select,button{width:100%;padding:14px 16px;border-radius:15px;font-size:16px;font-family:inherit}input,select{background:#070a14;color:#fff;border:1px solid var(--line);margin:7px 0 12px}button{border:0;background:linear-gradient(135deg,#f7d786,#d9a947);font-weight:900;cursor:pointer;margin-top:10px}button.secondary{background:linear-gradient(135deg,#292e50,#1b1e38);color:#fff}.hidden{display:none!important}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.room-code{font-size:36px;letter-spacing:6px;font-weight:900;color:var(--gold);text-align:center;background:#0a0c17;padding:16px;border-radius:18px;margin:14px 0}.player{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;background:#ffffff09;border:1px solid var(--line);border-radius:14px;margin:8px 0}.notice{background:#8b7cff18;border:1px solid #8b7cff44;border-radius:18px;padding:15px}.center{text-align:center}.muted{color:var(--muted);font-size:13px}.topbar{display:flex;gap:10px;align-items:center}.topbar>*{flex:1}.score{color:var(--gold);font-weight:900}.turn{font-size:22px;font-weight:800}.vote{background:#ffffff09;color:#fff;border:1px solid var(--line);text-align:right}.vote.selected{outline:3px solid var(--gold)}.small{font-size:13px;color:var(--muted)}</style></head><body><div class="app"><header><div class="logo">🕵️ برا السالفة</div><div class="sub">ONLINE EDITION • Created with ❤️ by SAMER</div></header>
-<section id="home" class="card"><h2>🌐 اللعب أونلاين</h2><p class="muted">أنشئ غرفة أو ادخل بكود غرفة. كل لاعب يلعب من جواله، والغرفة تبقى نفسها بين الجولات.</p><label>اسمك</label><input id="myName" placeholder="اكتب اسمك"><div class="grid"><button onclick="createRoom()">🏠 إنشاء غرفة</button><button class="secondary" onclick="showJoin()">🔑 دخول غرفة</button></div><div id="joinBox" class="hidden"><label>كود الغرفة</label><input id="joinCode" placeholder="SB-4829"><button onclick="joinRoom()">🚪 دخول</button></div></section>
-<section id="lobby" class="card hidden"><div class="topbar"><h2 style="flex:2">👥 الغرفة</h2><button class="secondary" onclick="copyCode()">📋 نسخ الكود</button></div><div class="room-code" id="roomCode">----</div><div id="hostControls" class="hidden"><label>عدد برا السالفة</label><input id="outsiderCount" type="number" min="1" value="1"><label>الفئة</label><select id="category"><option value="🍔 أكل">🍔 أكل</option><option value="🏙️ أماكن">🏙️ أماكن</option><option value="🎬 أفلام ومسلسلات">🎬 أفلام ومسلسلات</option><option value="⚽ رياضة">⚽ رياضة</option><option value="🧰 أشياء">🧰 أشياء</option></select></div><div class="notice"><b>🔒 النظام:</b> كل لاعب يرى دوره من جواله، والهوست يختار الفئة ويبدأ الجولة. كل لاعب يسأل مرتين، ثم يبدأ التصويت.</div><h3>اللاعبون والنقاط</h3><div id="players"></div><button id="startBtn" class="hidden" onclick="startOnlineGame()">🚀 ابدأ الجولة</button><div class="status" id="status">جاري الاتصال...</div></section>
-<section id="game" class="card hidden center"><div class="notice" id="gameStatus">بانتظار الجولة...</div><div id="privateRole" class="hidden"><h2>🔐 دورك</h2><div id="roleText"></div></div><div id="questionBox" class="hidden"><h2>🎤 دور الأسئلة</h2><p class="turn" id="pair"></p><p class="small" id="turnInfo"></p><button id="nextBtn" class="secondary" onclick="sendNextPair()">✅ انتهيت من السؤال — التالي</button><button id="hostVoteBtn" class="hidden" onclick="showVoting()">🗳️ بدء التصويت</button></div><div id="votingBox" class="hidden"><h2>🗳️ صوّت</h2><div id="voteList"></div><button onclick="submitVote()">تأكيد التصويت</button><p class="small" id="voteProgress"></p></div><div id="resultBox" class="hidden"><h2>🏆 النتيجة</h2><div id="resultText"></div><h3>النقاط</h3><div id="resultScores"></div><button id="rematchBtn" class="hidden" onclick="rematch()">🔁 جولة جديدة بنفس الغرفة</button></div></section></div>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>برا السالفة • SAMER Online</title>
+<style>
+:root{--bg:#070812;--panel:#15182c;--line:#ffffff1a;--gold:#f4c76a;--violet:#8b7cff;--text:#f8f8ff;--muted:#a8aec9;--good:#70e1a1;--bad:#ff7a7a}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 0%,#8b7cff28,transparent 30%),radial-gradient(circle at 90% 10%,#63d9ff1c,transparent 28%),linear-gradient(145deg,#070812,#0b0d19);color:var(--text);font-family:"Segoe UI",Tahoma,Arial,sans-serif;padding:18px}
+.app{max-width:760px;margin:auto}
+header{text-align:center;padding:16px 10px 26px}
+.logo{font-size:clamp(38px,8vw,64px);font-weight:900;background:linear-gradient(110deg,#fff,#ffe4a3,#f4c76a);-webkit-background-clip:text;color:transparent}
+.sub{color:var(--muted);font-size:13px}
+.card{background:#15182ccc;border:1px solid var(--line);border-radius:26px;padding:24px;box-shadow:0 24px 80px #0008;margin-bottom:16px;animation:cardIn .3s ease}
+@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+h2,h3{margin-top:0}
+input,select,button{width:100%;padding:14px 16px;border-radius:15px;font-size:16px;font-family:inherit}
+input,select{background:#070a14;color:#fff;border:1px solid var(--line);margin:7px 0 12px}
+button{border:0;background:linear-gradient(135deg,#f7d786,#d9a947);font-weight:800;cursor:pointer;margin-top:10px;color:#221a05}
+button:active{transform:scale(.97)}
+button.secondary{background:linear-gradient(135deg,#292e50,#1b1e38);color:#fff}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+button.danger{background:linear-gradient(135deg,#ff9a8b,#e2564a);color:#3a0b06}
+.hidden{display:none!important}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.room-code{font-size:34px;letter-spacing:6px;font-weight:900;color:var(--gold);text-align:center;background:#0a0c17;padding:16px;border-radius:18px;margin:14px 0}
+.player{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;background:#ffffff09;border:1px solid var(--line);border-radius:14px;margin:8px 0}
+.player.off{opacity:.45}
+.notice{background:#8b7cff18;border:1px solid #8b7cff44;border-radius:18px;padding:15px}
+.center{text-align:center}
+.muted{color:var(--muted);font-size:13px}
+.role-word{font-size:44px;color:#ffe4a3;font-weight:900;margin:16px 0;animation:pop .4s ease}
+@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+.vote{background:#ffffff09;color:#fff;border:1px solid var(--line);text-align:right}
+.vote.selected{outline:3px solid var(--gold)}
+.status{padding:10px 0;color:var(--muted);font-size:13px}
+.topbar{display:flex;gap:10px;align-items:center}
+.topbar>*{flex:1}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.badge.crowd{background:#70e1a122;color:var(--good);border:1px solid #70e1a144}
+.badge.spy{background:#8b7cff22;color:var(--violet);border:1px solid #8b7cff44}
+.timer-wrap{margin:14px 0}
+.timer-bar{height:10px;border-radius:6px;background:#ffffff10;overflow:hidden}
+.timer-fill{height:100%;background:linear-gradient(90deg,var(--good),var(--gold));width:100%;transition:width 1s linear}
+.timer-fill.warn{background:linear-gradient(90deg,var(--gold),var(--bad))}
+.timer-num{text-align:center;font-size:13px;color:var(--muted);margin-top:6px}
+.history-item{border:1px solid var(--line);border-radius:13px;padding:10px 13px;margin:7px 0;background:#ffffff05;font-size:14px}
+.title-tag{font-size:12px;color:var(--gold);margin-left:6px}
+.top1{border:1px solid #f4c76a55;background:linear-gradient(90deg,#f4c76a14,transparent)}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-top:6px}
+.toggle-row button{width:auto;padding:6px 12px;margin:0;font-size:12px}
+#errBanner{position:fixed;top:0;left:0;right:0;background:#e2564a;color:#fff;padding:10px 14px;font-size:13px;z-index:999;display:none;text-align:center}
+.modal-overlay{position:fixed;inset:0;background:#000000b3;display:flex;align-items:center;justify-content:center;z-index:998;padding:20px}
+.modal-card{background:#15182c;border:1px solid var(--line);border-radius:20px;padding:22px;max-width:380px;width:100%;box-shadow:0 20px 60px #000a}
+.modal-message{font-size:16px;line-height:1.6;margin-bottom:16px;text-align:center}
+.modal-actions{display:flex;gap:10px}
+.modal-actions button{margin-top:0}
+</style>
+</head>
+<body>
+<div id="errBanner"></div>
+<div id="modalOverlay" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div id="modalMessage" class="modal-message"></div>
+    <div class="modal-actions">
+      <button id="modalCancelBtn" class="secondary hidden" type="button">إلغاء</button>
+      <button id="modalOkBtn" type="button">حسنًا</button>
+    </div>
+  </div>
+</div>
+<div class="app">
+<header><div class="logo">🕵️ برا السالفة</div><div class="sub">ONLINE EDITION • Created with ❤️ by SAMER</div></header>
+
+<!-- ===== FIRST-TIME INSTRUCTIONS ===== -->
+<section id="intro" class="card hidden center">
+  <h2>👋 قبل لا نبدأ</h2>
+  <div class="notice" style="text-align:right">
+    <b>⚠️ مهم جدًا لكل الشباب:</b> افتحوا رابط اللعبة من <b>المتصفح مباشرة</b> (Safari أو Chrome).
+    لو فتحتوه من داخل واتساب/تيليجرام كمعاينة، الاتصال بالسيرفر غالبًا ما يشتغل.
+    <br><br>
+    لو وصلكم الرابط بواتساب: اضغطوا زر المشاركة أعلى المعاينة ← افتح باستخدام Safari / Chrome.
+  </div>
+  <button id="introOkBtn" type="button">🎬 فهمت، يلا نبدأ</button>
+</section>
+
+<section id="home" class="card">
+<h2>🌐 اللعب أونلاين</h2>
+<p class="muted">أنشئ غرفة أو ادخل بكود غرفة. كل لاعب يشوف دوره من جواله لحاله.</p>
+<label>اسمك</label>
+<input id="yourName" autocomplete="off" placeholder="مثال: سامر">
+<div class="grid">
+<button id="createBtn" type="button">🏠 إنشاء غرفة</button>
+<button id="showJoinBtn" class="secondary" type="button">🔑 دخول غرفة</button>
+</div>
+<div id="joinBox" class="hidden">
+<label>كود الغرفة</label><input id="joinCode" placeholder="مثال: SB-4829">
+<button id="joinBtn" type="button">🚪 دخول</button>
+</div>
+</section>
+
+<section id="lobby" class="card hidden">
+<div class="topbar"><h2 style="flex:2">👥 الغرفة</h2><button class="secondary" id="copyCodeBtn" type="button">📋 نسخ الكود</button></div>
+<div class="room-code" id="roomCode">----</div>
+<div id="hostControls" class="hidden">
+<label>عدد برا السالفة</label><input id="outsiderCount" type="number" min="1" value="1">
+<label>الفئة</label>
+<select id="category">
+<option value="mixed">🎲 منوعة</option>
+<option value="🍔 أكل">🍔 أكل</option>
+<option value="🏙️ أماكن">🏙️ أماكن</option>
+<option value="🎬 أفلام ومسلسلات">🎬 أفلام ومسلسلات</option>
+<option value="⚽ رياضة">⚽ رياضة</option>
+<option value="🧰 أشياء">🧰 أشياء</option>
+<option value="☕ أجواء خليجية">☕ أجواء خليجية</option>
+</select>
+</div>
+<div class="notice"><b>🔒 نظام الغرفة:</b> المضيف يبدأ الجولة، وكل لاعب يستقبل دوره بشكل خاص على جواله.</div>
+<h3>اللاعبون</h3><div id="players"></div>
+<button id="startBtn" class="hidden" type="button">🚀 ابدأ الجولة</button>
+<div class="status" id="status">جاري الاتصال...</div>
+</section>
+
+<section id="game" class="card hidden center">
+<div class="notice" id="gameStatus">بانتظار الجولة...</div>
+
+<div id="privateRole" class="hidden">
+  <h2>🔐 دورك</h2>
+  <div id="roleText"></div>
+</div>
+
+<div id="questionBox" class="hidden">
+  <h2>🎤 الأسئلة</h2>
+  <p id="pair" class="role-word" style="font-size:26px"></p>
+  <p id="pairProgress" class="muted"></p>
+  <div id="timerWrap" class="timer-wrap hidden">
+    <div class="timer-bar"><div id="timerFill" class="timer-fill"></div></div>
+    <div id="timerNum" class="timer-num"></div>
+  </div>
+  <div id="questionHostControls" class="hidden">
+    <button class="secondary" id="nextPairBtn" type="button">🎲 من يسأل من؟</button>
+    <button id="goVoteBtn" type="button">🗳️ انتقل للتصويت</button>
+  </div>
+  <div id="questionWaitNote" class="muted hidden">بانتظار المضيف يكمل الأسئلة أو ينتقل للتصويت...</div>
+</div>
+
+<div id="votingBox" class="hidden">
+  <h2>🗳️ صوّت</h2>
+  <div id="voteList"></div>
+  <button id="submitVoteBtn" type="button">تأكيد التصويت</button>
+  <p id="voteProgress" class="muted"></p>
+</div>
+
+<div id="guessBox" class="hidden">
+  <h2>🎯 فرصة أخيرة</h2>
+  <div id="guessIntro" class="notice"></div>
+  <div id="guessSelfBox" class="hidden">
+    <input id="guessInput" autocomplete="off" placeholder="اكتب تخمينك للكلمة السرية">
+    <button id="submitGuessBtn" type="button">✅ تأكيد التخمين</button>
+    <button id="skipGuessBtn" class="ghost" type="button">تجاوز (بدون تخمين)</button>
+  </div>
+</div>
+
+<div id="resultBox" class="hidden">
+  <h2>🏆 نتيجة الجولة</h2>
+  <div id="resultText"></div>
+  <div id="resultHostControls" class="hidden">
+    <button id="continueRoundBtn" type="button">🔁 استمرار جولة ثانية</button>
+    <button id="endGameBtn" class="danger" type="button">🏁 إنهاء اللعبة</button>
+  </div>
+  <div id="resultWaitNote" class="muted hidden">بانتظار قرار المضيف...</div>
+</div>
+
+<div id="finalBox" class="hidden">
+  <h2>👑 ملخص السهرة</h2>
+  <div id="finalText"></div>
+  <button id="newGameBtn" type="button">🆕 لعبة/شلة جديدة</button>
+</div>
+</section>
+
+<div class="toggle-row" style="max-width:760px;margin:auto">
+  <span>🔊 المؤثرات الصوتية والراوي</span>
+  <button id="soundToggleBtn" type="button" class="ghost ">تشغيل</button>
+</div>
+</div>
+
 <script>
-const SERVER=location.protocol==='file:'?'ws://localhost:8787':((location.protocol==='https:'?'wss://':'ws://')+location.host);let ws=null,room='',me='',isHost=false,selectedVote=null,currentTurn=null;let state={players:[]};const $=id=>document.getElementById(id);
-function connect(onReady){if(ws&&(ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING)){if(ws.readyState===WebSocket.OPEN)onReady?.();return}ws=new WebSocket(SERVER);ws.onopen=()=>{ $('status').textContent='متصل بالخادم ✅';onReady?.()};ws.onerror=()=>{$('status').textContent='تعذر الاتصال بالخادم ❌';alert('تعذر الاتصال بالسيرفر. حاول تحديث الصفحة.')};ws.onclose=()=>{$('status').textContent='انقطع الاتصال. أعد المحاولة.'};ws.onmessage=e=>{try{handle(JSON.parse(e.data))}catch{alert('وصلت رسالة غير مفهومة من السيرفر.')}}}
-function send(type,data={}){if(!ws||ws.readyState!==WebSocket.OPEN){alert('الاتصال بالسيرفر غير جاهز.');return false}ws.send(JSON.stringify({type,room,me,data}));return true}
-function createRoom(){me=$('myName').value.trim()||'SAMER';isHost=true;connect(()=>send('create_room',{name:me}))}function showJoin(){$('joinBox').classList.remove('hidden');$('myName').focus()}function joinRoom(){const code=$('joinCode').value.trim().toUpperCase(),name=$('myName').value.trim();if(!code||!name)return alert('اكتب اسمك وكود الغرفة');room=code;me=name;isHost=false;connect(()=>send('join_room',{name:me}))}function copyCode(){navigator.clipboard?.writeText(room).then(()=>alert('تم نسخ الكود')).catch(()=>alert('الكود: '+room))}
-function handle(m){if(m.type==='room_created'){room=m.room;me=m.name||me;showLobby();$('hostControls').classList.remove('hidden');$('startBtn').classList.remove('hidden');$('status').textContent='الغرفة جاهزة ✅';return}if(m.type==='lobby'){state=m;if(!room&&m.room)room=m.room;isHost=m.host===me;showLobby();$('hostControls').classList.toggle('hidden',!isHost);$('startBtn').classList.toggle('hidden',!isHost);renderPlayers();return}if(m.type==='role'){showGame();$('privateRole').classList.remove('hidden');$('questionBox').classList.add('hidden');$('votingBox').classList.add('hidden');$('resultBox').classList.add('hidden');$('roleText').innerHTML=m.outsider?'<div class="role-word">أنت برا السالفة 😎</div>':'<div class="role-word">'+escapeHtml(m.word)+'</div>';return}if(m.type==='question_turn'){showGame();currentTurn=m;$('questionBox').classList.remove('hidden');$('votingBox').classList.add('hidden');$('resultBox').classList.add('hidden');$('pair').textContent=m.asker+' يسأل 👉 '+m.target;$('turnInfo').textContent='السؤال '+m.turn+' من '+m.total+(m.asker===me?' — دورك الآن':' — انتظر دورك');$('nextBtn').disabled=m.asker!==me;$('nextBtn').style.opacity=m.asker===me?'1':'.45';$('hostVoteBtn').classList.toggle('hidden',!isHost);return}if(m.type==='voting'){selectedVote=null;showGame();$('questionBox').classList.add('hidden');$('votingBox').classList.remove('hidden');$('resultBox').classList.add('hidden');renderVotes(m.players||[]);$('voteProgress').textContent='0 / '+(m.players||[]).length+' صوّتوا';return}if(m.type==='vote_progress'){$('voteProgress').textContent=m.count+' / '+m.total+' صوّتوا';return}if(m.type==='result'){showGame();$('votingBox').classList.add('hidden');$('resultBox').classList.remove('hidden');$('resultText').innerHTML=(m.caught?'🎉 تم اكتشاف برا السالفة!':'😈 برا السالفة نجا!')+'<br><br>👤 <b>'+(m.outsiders||[]).map(escapeHtml).join('، ')+'</b><br>🔐 الكلمة: <b>'+escapeHtml(m.word)+'</b><br><br>🗳️ التصويت: '+(m.voted||[]).map(escapeHtml).join('، ');$('resultScores').innerHTML=(m.scores||[]).slice().sort((a,b)=>b.score-a.score).map(p=>'<div class="player"><span>'+escapeHtml(p.name)+'</span><span class="score">'+p.score+' نقطة</span></div>').join('');$('rematchBtn').classList.toggle('hidden',!isHost);return}if(m.type==='error')alert(m.message||'حدث خطأ')}
-function showLobby(){$('home').classList.add('hidden');$('game').classList.add('hidden');$('lobby').classList.remove('hidden');$('roomCode').textContent=room||'----'}function showGame(){$('lobby').classList.add('hidden');$('game').classList.remove('hidden')}function renderPlayers(){$('players').innerHTML=(state.players||[]).map((p,i)=>'<div class="player"><span>'+(i===0?'👑 ':'')+escapeHtml(p.name)+'</span><span class="score">'+p.score+' نقطة</span></div>').join('')}
-function startOnlineGame(){send('start_game',{count:Math.max(1,parseInt($('outsiderCount').value,10)||1),category:$('category').value})}function sendNextPair(){if(currentTurn?.asker!==me)return alert('انتظر دورك');send('next_pair')}function showVoting(){if(!isHost)return;send('start_voting')}function normalizePlayer(p){return typeof p==='string'?p:(p&&typeof p==='object'?(p.name||p.username||p.playerName||''):'')}
+(function(){
+"use strict";
+
+window.onerror = function(msg, src, line){
+  var b=document.getElementById("errBanner");
+  b.style.display="block";
+  b.textContent="⚠️ صار خطأ بالكود: "+msg+" (سطر "+line+") — صوّر هالرسالة وارسلها.";
+  return false;
+};
+
+const SERVER = location.protocol === "file:"
+  ? "ws://localhost:8787"
+  : ((location.protocol === "https:" ? "wss://" : "ws://") + location.host);
+
+const $ = id => document.getElementById(id);
+let ws=null, room="", me="", selectedVote=null, soundOn=true, audioCtx=null;
+let state={players:[], hostName:"", scores:{}};
+let questionSeconds=20, timerInterval=null, timerRemaining=0;
+
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function amIHost(){ return state.hostName && me && state.hostName===me; }
+
+// ---------- modal (replaces alert/confirm) ----------
+function showAlert(msg,onOk){
+  $("modalMessage").textContent=msg;
+  $("modalCancelBtn").classList.add("hidden");
+  $("modalOkBtn").textContent="حسنًا";
+  $("modalOverlay").classList.remove("hidden");
+  $("modalOkBtn").onclick=()=>{ $("modalOverlay").classList.add("hidden"); if(onOk)onOk(); };
+}
+function showConfirm(msg,onYes){
+  $("modalMessage").textContent=msg;
+  $("modalCancelBtn").classList.remove("hidden");
+  $("modalOkBtn").textContent="تأكيد";
+  $("modalOverlay").classList.remove("hidden");
+  $("modalOkBtn").onclick=()=>{ $("modalOverlay").classList.add("hidden"); onYes(); };
+  $("modalCancelBtn").onclick=()=>{ $("modalOverlay").classList.add("hidden"); };
+}
+
+// ---------- sound / vibration / narrator ----------
+function ensureAudio(){ if(!soundOn)return null; try{ if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }catch(e){return null;} }
+function beep(freq,dur,type){
+  const ctx=ensureAudio(); if(!ctx)return;
+  try{
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=type||"sine"; o.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.18,ctx.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+dur);
+    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+dur+0.02);
+  }catch(e){}
+}
+function sfx(name){
+  if(!soundOn)return;
+  if(name==="tick")beep(880,0.06,"square");
+  else if(name==="reveal")beep(220,0.35,"triangle");
+  else if(name==="win")[440,660,880].forEach((f,i)=>setTimeout(()=>beep(f,0.25,"sine"),i*110));
+  else if(name==="lose")[300,220,160].forEach((f,i)=>setTimeout(()=>beep(f,0.3,"sawtooth"),i*130));
+  else if(name==="tap")beep(600,0.05,"square");
+}
+function vibrate(pattern){ try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
+function speak(text){
+  if(!soundOn)return;
+  try{ if(!window.speechSynthesis)return; window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text); u.lang="ar-SA"; u.rate=0.95; window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+function seenIntro(){try{return localStorage.getItem("baraAlsalfaOnlineSeenIntro")==="1";}catch(e){return false;}}
+function markIntroSeen(){try{localStorage.setItem("baraAlsalfaOnlineSeenIntro","1");}catch(e){}}
+function loadSoundPref(){try{ soundOn = localStorage.getItem("baraAlsalfaOnlineSound")!=="off"; }catch(e){}}
+function saveSoundPref(){try{ localStorage.setItem("baraAlsalfaOnlineSound", soundOn?"on":"off"); }catch(e){}}
+
+// ---------- connection ----------
+function connect(onReady){
+  if(ws && (ws.readyState===WebSocket.OPEN || ws.readyState===WebSocket.CONNECTING)){
+    if(ws.readyState===WebSocket.OPEN) onReady?.();
+    return;
+  }
+  ws=new WebSocket(SERVER);
+  ws.onopen=()=>{ $("status").textContent="متصل بالخادم ✅"; onReady?.(); };
+  ws.onerror=()=>{ $("status").textContent="تعذر الاتصال بالخادم ❌"; showAlert("تعذر الاتصال بالسيرفر. تأكد إنك فتحت الرابط من متصفح حقيقي، وحاول تحديث الصفحة."); };
+  ws.onclose=()=>{ $("status").textContent="انقطع الاتصال. أعد المحاولة أو حدّث الصفحة."; };
+  ws.onmessage=e=>{ try{ handle(JSON.parse(e.data)); }catch(err){ showAlert("وصلت رسالة غير مفهومة من السيرفر."); } };
+}
+function send(type,data={}){
+  if(!ws || ws.readyState!==WebSocket.OPEN){ showAlert("الاتصال بالسيرفر غير جاهز."); return false; }
+  ws.send(JSON.stringify({type, room, me, data}));
+  return true;
+}
+
+// ---------- home actions ----------
+function createRoom(){
+  const name=$("yourName").value.trim();
+  if(!name){ showAlert("اكتب اسمك أولاً"); return; }
+  connect(()=>send("create_room",{name}));
+}
+function showJoin(){ $("joinBox").classList.remove("hidden"); $("joinCode").focus(); }
+function joinRoom(){
+  const code=$("joinCode").value.trim().toUpperCase();
+  const name=$("yourName").value.trim();
+  if(!code || !name){ showAlert("اكتب اسمك وكود الغرفة"); return; }
+  room=code;
+  connect(()=>send("join_room",{room:code,name}));
+}
+function copyCode(){
+  if(navigator.clipboard){ navigator.clipboard.writeText(room).then(()=>showAlert("تم نسخ الكود ✅")).catch(()=>showAlert("الكود: "+room)); }
+  else showAlert("الكود: "+room);
+}
+
+// ---------- message handling ----------
+function handle(m){
+  if(m.type==="room_created"){
+    room=m.room; me=m.name;
+    if(!m.rejoined){ showLobby(); }
+    $("status").textContent = m.rejoined ? "رجعت للغرفة ✅" : "الغرفة جاهزة ✅";
+    return;
+  }
+  if(m.type==="lobby"){
+    state=m;
+    if(m.phase==="lobby"){
+      showLobby(); renderPlayers();
+      $("hostControls").classList.toggle("hidden", !amIHost());
+      $("startBtn").classList.toggle("hidden", !amIHost());
+    }
+    return;
+  }
+  if(m.type==="role"){
+    showScreen("game");
+    resetGameSubsections();
+    $("privateRole").classList.remove("hidden");
+    $("gameStatus").textContent="🎬 توزيع الأدوار";
+    $("roleText").innerHTML = m.outsider
+      ? "<div class='role-word'>😎 عيش اللحظة إنك برا السالفة</div><div class='muted'>لا تعرف الكلمة، افهمها من الأسئلة 🤫</div>"
+      : "<div class='role-word'>"+esc(m.word)+"</div>";
+    sfx("reveal"); vibrate(m.outsider?[40,60,40]:[80]);
+    return;
+  }
+  if(m.type==="questions"){
+    showScreen("game");
+    resetGameSubsections();
+    $("questionBox").classList.remove("hidden");
+    $("gameStatus").textContent="🎤 وقت الأسئلة";
+    $("pair").textContent = m.asker+" يسأل 👉 "+m.target;
+    $("pairProgress").textContent = "سؤال "+m.index+" من "+m.total;
+    $("questionHostControls").classList.toggle("hidden", !amIHost());
+    $("questionWaitNote").classList.toggle("hidden", amIHost());
+    startTimer();
+    return;
+  }
+  if(m.type==="voting"){
+    clearInterval(timerInterval);
+    selectedVote=null;
+    showScreen("game");
+    resetGameSubsections();
+    $("votingBox").classList.remove("hidden");
+    $("gameStatus").textContent="🗳️ وقت التصويت";
+    renderVotes(m.players||[]);
+    $("voteProgress").textContent="";
+    return;
+  }
+  if(m.type==="vote_progress"){
+    $("voteProgress").textContent = m.count+" من "+m.total+" صوّتوا";
+    return;
+  }
+  if(m.type==="guessing"){
+    showScreen("game");
+    resetGameSubsections();
+    $("guessBox").classList.remove("hidden");
+    $("gameStatus").textContent="🎯 لحظة الحسم";
+    const isMe = m.guesser===me;
+    $("guessIntro").textContent = (m.tie?"⚖️ صار تعادل بالتصويت، بس ":"") + "تم كشف "+m.guesser+" كـ برا السالفة. "+(isMe?"فرصتك الأخيرة تخمّن الكلمة السرية:":"ننتظر تخمينه/تخمينها...");
+    $("guessSelfBox").classList.toggle("hidden", !isMe);
+    if(isMe){ $("guessInput").value=""; $("guessInput").focus(); }
+    vibrate([50,30,50]);
+    return;
+  }
+  if(m.type==="result"){
+    showScreen("game");
+    resetGameSubsections();
+    $("resultBox").classList.remove("hidden");
+    $("gameStatus").textContent="🏆 نتيجة الجولة";
+    renderResult(m);
+    $("resultHostControls").classList.toggle("hidden", !amIHost());
+    $("resultWaitNote").classList.toggle("hidden", amIHost());
+    return;
+  }
+  if(m.type==="final"){
+    showScreen("game");
+    resetGameSubsections();
+    $("finalBox").classList.remove("hidden");
+    $("gameStatus").textContent="👑 انتهت السهرة";
+    renderFinal(m);
+    sfx("win"); vibrate([80,60,80,60,160]); speak("انتهت السهرة، مبروك للفايزين");
+    return;
+  }
+  if(m.type==="error"){ showAlert(m.message||"حدث خطأ"); return; }
+}
+
+function showScreen(id){
+  ["intro","home","lobby","game"].forEach(s=>$(s).classList.toggle("hidden", s!==id));
+}
+function showLobby(){ showScreen("lobby"); $("roomCode").textContent=room||"----"; }
+function resetGameSubsections(){
+  ["privateRole","questionBox","votingBox","guessBox","resultBox","finalBox"].forEach(id=>$(id).classList.add("hidden"));
+}
+function renderPlayers(){
+  $("players").innerHTML=(state.players||[]).map((p,i)=>{
+    const off = state.connected && state.connected[i]===false;
+    const crown = p===state.hostName ? "👑 " : "";
+    const score = (state.scores && state.scores[p]!==undefined) ? " • "+state.scores[p]+" نقطة" : "";
+    return `<div class="player ${off?'off':''}"><span>${crown}${esc(p)}${off?" (غير متصل)":""}</span><span class="muted">${score}</span></div>`;
+  }).join("");
+}
+
+// ---------- timer ----------
+function startTimer(){
+  clearInterval(timerInterval);
+  $("timerWrap").classList.remove("hidden");
+  timerRemaining=questionSeconds;
+  updateTimerUI();
+  timerInterval=setInterval(()=>{
+    timerRemaining--; updateTimerUI();
+    if(timerRemaining<=3 && timerRemaining>0) sfx("tick");
+    if(timerRemaining<=0){ clearInterval(timerInterval); $("timerNum").textContent="⏰ الوقت خلص!"; vibrate([60,40,60]); }
+  },1000);
+}
+function updateTimerUI(){
+  const pct=Math.max(0,(timerRemaining/questionSeconds)*100);
+  const fill=$("timerFill");
+  fill.style.width=pct+"%";
+  fill.classList.toggle("warn", timerRemaining<=5);
+  $("timerNum").textContent = timerRemaining>0 ? (timerRemaining+" ثانية") : "⏰ الوقت خلص!";
+}
+
+// ---------- voting ----------
 function renderVotes(players){
- const names=(players||[]).map(normalizePlayer).filter(Boolean);
- const myName=String(me||'').trim().toLowerCase();
- const eligible=[...new Set(names)].filter(p=>p.trim().toLowerCase()!==myName);
- $('voteList').innerHTML=eligible.map(p=>'<button type="button" class="vote" data-player="'+escapeHtml(p)+'">'+escapeHtml(p)+'</button>').join('');
- if(!eligible.length){$('voteList').innerHTML='<div class="notice">لا يوجد لاعبون متاحون للتصويت.</div>';return}
- $('voteList').querySelectorAll('.vote').forEach(btn=>btn.addEventListener('click',()=>{
-   selectedVote=btn.dataset.player;
-   $('voteList').querySelectorAll('.vote').forEach(x=>x.classList.remove('selected'));
-   btn.classList.add('selected');
- }))
-}function submitVote(){if(!selectedVote)return alert('اختر لاعبًا');send('vote',{target:selectedVote})}function rematch(){if(isHost)send('rematch',{count:Math.max(1,parseInt($('outsiderCount').value,10)||1),category:$('category').value})}function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-</script></body></html>
+  $("voteList").innerHTML = players.filter(p=>p!==me).map(p=>
+    `<button type="button" class="vote" data-player="${esc(p)}">${esc(p)}</button>`
+  ).join("");
+  $("voteList").querySelectorAll(".vote").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      selectedVote=btn.dataset.player;
+      $("voteList").querySelectorAll(".vote").forEach(x=>x.classList.remove("selected"));
+      btn.classList.add("selected");
+      sfx("tap");
+    });
+  });
+}
+function submitVote(){
+  if(!selectedVote){ showAlert("اختر لاعبًا"); return; }
+  send("vote",{target:selectedVote});
+}
+
+// ---------- result / final rendering ----------
+function renderResult(m){
+  const badge = m.outsidersWin ? "spy" : "crowd";
+  const tieNote = m.tie ? `<div class="muted">⚖️ ملاحظة: كان فيه تعادل بالتصويت.</div>` : "";
+  const roundScoresHtml = (state.players||[]).map(p=>{
+    const add = m.roundScores && m.roundScores[p] ? ("+"+m.roundScores[p]) : "0";
+    const total = (m.scores && m.scores[p]!==undefined) ? m.scores[p] : 0;
+    return `<div class="player"><span>${esc(p)}</span><span>${add} • مجموع: ${total}</span></div>`;
+  }).join("");
+  $("resultText").innerHTML = `
+    <div class="notice center">
+      <span class="badge ${badge}">${m.outsidersWin?"فوز برا السالفة":"فوز المجموعة"}</span>
+      <div style="margin-top:10px">${esc(m.headline)}</div>
+      ${tieNote}
+      <br>🔐 الكلمة: <b>${esc(m.word)}</b><br>
+      🕵️ برا السالفة: <b>${m.outsiders.map(esc).join("، ")}</b>
+    </div>
+    <h3>📊 نقاط هذي الجولة</h3>
+    ${roundScoresHtml}
+  `;
+  if(m.outsidersWin){ sfx("win"); vibrate([120]); speak(m.headline); }
+  else { sfx("lose"); vibrate([40,40,40]); speak(m.headline); }
+  state.scores = m.scores;
+}
+function computeTitles(scores, stats, names){
+  const titles=[]; let bestScore=null, bestSpy=null, worstSpy=null;
+  names.forEach(p=>{
+    const s=stats[p]||{};
+    if(bestScore===null || (scores[p]||0)>(scores[bestScore]||0)) bestScore=p;
+    if((s.outsiderCount||0)>0){
+      if(worstSpy===null || (s.caughtCount||0)>((stats[worstSpy]||{}).caughtCount||0)) worstSpy=p;
+      if(bestSpy===null || (s.escapedCount||0)>((stats[bestSpy]||{}).escapedCount||0)) bestSpy=p;
+    }
+  });
+  if(bestScore) titles.push({name:bestScore, label:"👑 أسطورة السهرة"});
+  if(bestSpy && (stats[bestSpy].escapedCount||0)>0) titles.push({name:bestSpy, label:"🕶️ ملك التمويه"});
+  if(worstSpy && (stats[worstSpy].caughtCount||0)>0) titles.push({name:worstSpy, label:"🙈 أسوأ جاسوس"});
+  return titles;
+}
+function renderFinal(m){
+  const names=m.ranked;
+  const titles=computeTitles(m.scores, m.stats, names);
+  const titlesHtml = titles.length
+    ? `<div class="notice" style="text-align:right"><b>🏅 ألقاب السهرة</b><br>${titles.map(t=>`<span class="title-tag">${t.label}:</span> ${esc(t.name)}<br>`).join("")}</div>`
+    : "";
+  const leaderboard = names.map((p,i)=>`<div class="player ${i===0?'top1':''}"><span>${i+1}. ${esc(p)}</span><span>${m.scores[p]||0} نقطة</span></div>`).join("");
+  const history = (m.roundHistory||[]).map((r,i)=>{
+    const outcome = r.outcome==="crowd_caught" ? "فازت المجموعة" : r.outcome==="outsiders_guessed" ? "برا السالفة فاز بالتخمين" : "برا السالفة نجا";
+    return `<div class="history-item">جولة ${i+1}: الكلمة "${esc(r.word)}" — برا السالفة: ${r.outsiders.map(esc).join("، ")} — ${outcome}</div>`;
+  }).join("");
+  $("finalText").innerHTML = `${titlesHtml}<h3>🏆 الترتيب النهائي</h3>${leaderboard}${history?("<h3>📜 سجل الجولات</h3>"+history):""}`;
+}
+
+// ---------- wiring ----------
+$("introOkBtn").onclick=()=>{ markIntroSeen(); showScreen("home"); };
+$("createBtn").onclick=createRoom;
+$("showJoinBtn").onclick=showJoin;
+$("joinBtn").onclick=joinRoom;
+$("copyCodeBtn").onclick=copyCode;
+$("startBtn").onclick=()=>{
+  const count=Math.max(1,parseInt($("outsiderCount").value,10)||1);
+  const category=$("category").value;
+  send("start_game",{count,category});
+};
+$("nextPairBtn").onclick=()=>send("next_pair");
+$("goVoteBtn").onclick=()=>send("start_voting");
+$("submitVoteBtn").onclick=submitVote;
+$("submitGuessBtn").onclick=()=>{
+  const guess=$("guessInput").value;
+  if(!guess.trim()){ showAlert("اكتب تخمينك أو اضغط تجاوز"); return; }
+  send("guess_word",{guess});
+};
+$("skipGuessBtn").onclick=()=>send("skip_guess");
+$("continueRoundBtn").onclick=()=>send("next_round");
+$("endGameBtn").onclick=()=>{ showConfirm("متأكد تبي تنهي اللعبة؟ ما تقدر ترجعها.", ()=>send("end_game")); };
+$("newGameBtn").onclick=()=>location.reload();
+$("soundToggleBtn").onclick=()=>{ soundOn=!soundOn; saveSoundPref(); $("soundToggleBtn").textContent=soundOn?"تشغيل":"إيقاف"; if(soundOn)sfx("tap"); };
+
+// ---------- boot ----------
+loadSoundPref();
+$("soundToggleBtn").textContent=soundOn?"تشغيل":"إيقاف";
+showScreen(seenIntro() ? "home" : "intro");
+})();
+</script>
+</body>
+</html>
