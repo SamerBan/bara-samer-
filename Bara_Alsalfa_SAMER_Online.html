@@ -127,6 +127,11 @@ button.danger{background:linear-gradient(135deg,#ff9a8b,#e2564a);color:#3a0b06}
 <div id="privateRole" class="hidden">
   <h2>🔐 دورك</h2>
   <div id="roleText"></div>
+  <div id="readyBox">
+    <button id="readyBtn" type="button">✅ شفت دوري، جاهز</button>
+    <p id="readyStatus" class="muted"></p>
+    <button id="forceStartBtn" class="ghost hidden" type="button">▶️ ابدأ على أي حال (المضيف)</button>
+  </div>
 </div>
 
 <div id="questionBox" class="hidden">
@@ -319,7 +324,16 @@ function handle(m){
     $("roleText").innerHTML = m.outsider
       ? "<div class='role-word'>😎 عيش اللحظة إنك برا السالفة</div><div class='muted'>لا تعرف الكلمة، افهمها من الأسئلة 🤫</div>"
       : "<div class='role-word'>"+esc(m.word)+"</div>";
+    $("readyBtn").classList.remove("hidden");
+    $("readyBtn").disabled=false;
+    $("readyBtn").textContent="✅ شفت دوري، جاهز";
+    $("readyStatus").textContent="";
+    $("forceStartBtn").classList.toggle("hidden", !amIHost());
     sfx("reveal"); vibrate(m.outsider?[40,60,40]:[80]);
+    return;
+  }
+  if(m.type==="ready_progress"){
+    $("readyStatus").textContent = m.readyCount+" من "+m.total+" جاهزين";
     return;
   }
   if(m.type==="questions"){
@@ -511,6 +525,13 @@ $("submitGuessBtn").onclick=()=>{
   send("guess_word",{guess});
 };
 $("skipGuessBtn").onclick=()=>send("skip_guess");
+$("readyBtn").onclick=()=>{
+  send("confirm_ready");
+  $("readyBtn").disabled=true;
+  $("readyBtn").textContent="⏳ بانتظار الباقي...";
+  sfx("tap");
+};
+$("forceStartBtn").onclick=()=>send("force_start_questions");
 $("continueRoundBtn").onclick=()=>send("next_round");
 $("endGameBtn").onclick=()=>{ showConfirm("متأكد تبي تنهي اللعبة؟ ما تقدر ترجعها.", ()=>send("end_game")); };
 $("newGameBtn").onclick=()=>location.reload();

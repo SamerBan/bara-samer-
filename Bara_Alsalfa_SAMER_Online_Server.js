@@ -73,17 +73,18 @@ function needHost(room, ws) { return !isHost(room, ws); }
 
 // ---------- round flow ----------
 function beginRound(room) {
-  const names = room.players.map(p => p.name);
+  const names = room.players.filter(p => p.connected !== false).map(p => p.name);
   room.word = chooseWord(room.lastCategory || "mixed");
   const count = Math.min(Math.max(1, room.lastCount || 1), names.length - 1);
   const shuffled = [...names].sort(() => Math.random() - 0.5);
   room.outsiders = new Set(shuffled.slice(0, count));
   room.pairs = makePairs(names);
-  room.pairIndex = 0;
+  room.pairIndex = -1;
   room.votes = new Map();
   room.caught = [];
   room.guessQueue = [];
-  room.phase = "questions";
+  room.readySet = new Set();
+  room.phase = "role_reveal";
 
   room.players.forEach(p => send(p.ws, {
     type: "role",
@@ -91,12 +92,14 @@ function beginRound(room) {
     word: room.word,
     category: room.lastCategory
   }));
-  setTimeout(() => {
-    if (room.phase === "questions") {
-      const [a, b] = room.pairs[0];
-      broadcast(room, { type: "questions", asker: a, target: b, index: 1, total: room.pairs.length });
-    }
-  }, 700);
+  broadcast(room, { type: "ready_progress", readyCount: 0, total: names.length });
+}
+
+function beginQuestions(room) {
+  room.phase = "questions";
+  room.pairIndex = 0;
+  const [a, b] = room.pairs[0];
+  broadcast(room, { type: "questions", asker: a, target: b, index: 1, total: room.pairs.length });
 }
 
 function resolveVotes(room) {
@@ -254,6 +257,24 @@ wss.on("connection", ws => {
       return;
     }
 
+    if (m.type === "confirm_ready") {
+      if (room.phase !== "role_reveal") return;
+      const p = room.players.find(x => x.ws === ws);
+      if (!p) return;
+      room.readySet.add(p.name);
+      const total = room.players.filter(x => x.connected !== false).length;
+      broadcast(room, { type: "ready_progress", readyCount: room.readySet.size, total });
+      if (room.readySet.size >= total) beginQuestions(room);
+      return;
+    }
+
+    if (m.type === "force_start_questions") {
+      if (needHost(room, ws)) return send(ws, { type: "error", message: "المضيف فقط يقدر يبدأ رغم عدم الجاهزية" });
+      if (room.phase !== "role_reveal") return;
+      beginQuestions(room);
+      return;
+    }
+
     if (m.type === "next_pair") {
       if (needHost(room, ws)) return send(ws, { type: "error", message: "المضيف فقط يتحكم بالأسئلة" });
       if (room.phase !== "questions") return;
@@ -282,8 +303,9 @@ wss.on("connection", ws => {
       const target = cleanName(data.target);
       if (!voter || !room.players.some(p => p.name === target) || target === voter.name) return;
       room.votes.set(voter.name, target);
-      broadcast(room, { type: "vote_progress", count: room.votes.size, total: room.players.length });
-      if (room.votes.size >= room.players.length) resolveVotes(room);
+      broadcast(room, { type: "vote_progress", count: room.votes.size, total: room.players.filter(p => p.connected !== false).length });
+      const requiredVotes = room.players.filter(p => p.connected !== false).length;
+      if (room.votes.size >= requiredVotes) resolveVotes(room);
       return;
     }
 
@@ -356,7 +378,11 @@ wss.on("connection", ws => {
 });
 
 function sendPhaseSnapshot(room, ws, name) {
-  if (room.phase === "questions") {
+  if (room.phase === "role_reveal") {
+    send(ws, { type: "role", outsider: room.outsiders.has(name), word: room.word, category: room.lastCategory });
+    const total = room.players.filter(x => x.connected !== false).length;
+    send(ws, { type: "ready_progress", readyCount: room.readySet ? room.readySet.size : 0, total });
+  } else if (room.phase === "questions") {
     const [a, b] = room.pairs[room.pairIndex] || [];
     send(ws, { type: "role", outsider: room.outsiders.has(name), word: room.word, category: room.lastCategory });
     if (a) send(ws, { type: "questions", asker: a, target: b, index: room.pairIndex + 1, total: room.pairs.length });
